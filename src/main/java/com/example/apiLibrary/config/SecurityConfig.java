@@ -24,8 +24,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
-    private UsuarioService usuarioService; 
 
     @Autowired
     private JwtAuthenticationEntryPoint unauthorizedHandler; // Autowire

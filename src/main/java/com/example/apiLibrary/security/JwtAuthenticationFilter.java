@@ -19,17 +19,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.context.annotation.Lazy;
 
 // Making this a @Component to allow autowiring if needed, though it's often created as a @Bean in SecurityConfig
 // For this setup, it will be created as a bean in SecurityConfig.
 // So, remove @Component if it's instantiated via new in SecurityConfig.
 // Let's keep it as @Component for now, and it can be autowired in SecurityConfig.
-@Component 
+@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
@@ -37,13 +37,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
-    @Autowired
-    private UsuarioService usuarioService; // UserDetailsService
-
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
 
@@ -56,25 +53,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // If using UserDetails directly from UserDetailsService:
                 // UsernamePasswordAuthenticationToken authentication = 
                 //     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
                 // Or, construct UserDetails on the fly if not fetching from DB for every request (using roles from token)
                 List<GrantedAuthority> authorities = Arrays.stream(rolesString.split(","))
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
-                
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+
                 // Create UserDetails object for UsernamePasswordAuthenticationToken
                 // Here, we use the username from the token and authorities from the token.
                 // The password field is irrelevant here as the token is already validated.
                 UserDetails userDetailsForToken = org.springframework.security.core.userdetails.User
-                                                    .withUsername(username)
-                                                    .password("") // Password not needed for token-based auth context
-                                                    .authorities(authorities)
-                                                    .build();
+                        .withUsername(username)
+                        .password("") // Password not needed for token-based auth context
+                        .authorities(authorities)
+                        .build();
 
+                UsernamePasswordAuthenticationToken authentication
+                        = new UsernamePasswordAuthenticationToken(userDetailsForToken, null, authorities);
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetailsForToken, null, authorities);
-                
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
